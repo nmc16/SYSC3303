@@ -1,5 +1,3 @@
-package assign1;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -13,16 +11,15 @@ public class Client {
 	private static final Logger LOG = Logger.getLogger("client");
 	private static final String FILE_NAME = "test.txt";
 	private static final String MODE = "netascii";
-	private static final int BUFFER_SIZE = 1024, HOST_PORT = 68;
+	private static final int BUFFER_SIZE = 128;
 	private DatagramSocket clientSocket;
-	private int port;
 	private InetAddress address;
+    private int hostPort;
 	
-	public Client(String ip, int port) {
+	public Client(String ip, int port, int hostPort) {
 		try {
-			InetAddress address = InetAddress.getByName(ip);
-			this.address = address;
-			this.port = port;
+			address = InetAddress.getByName(ip);
+			this.hostPort = hostPort;
 			clientSocket = new DatagramSocket(port, address);
 		} catch (IOException e) {
 			LOG.severe("Could not create client socket: " + e.getLocalizedMessage());
@@ -50,9 +47,8 @@ public class Client {
 		buffer.write(0);
 		
 		String msg = Arrays.toString(buffer.toByteArray());
-		LOG.info("Byte array being sent to server: " + msg);
 		
-		return new DatagramPacket(buffer.toByteArray(), buffer.toByteArray().length, address, HOST_PORT);
+		return new DatagramPacket(buffer.toByteArray(), buffer.toByteArray().length, address, hostPort);
 	}
 	
 	public void run() {
@@ -60,38 +56,40 @@ public class Client {
 		for (int i = 0; i <= 10; i++) {
 			DatagramPacket datagramPacket;
 			if (i == 10) {
+                LOG.info("Sending invalid request to host...");
 				byte msg[] = new byte[10];
-				datagramPacket = new DatagramPacket(msg, msg.length, address, HOST_PORT);
+				datagramPacket = new DatagramPacket(msg, msg.length, address, hostPort);
 				
 			} else {
 				datagramPacket = createPacket();
 			}
 			
 			try {
+                LOG.info("Request " + (i + 1) + " being sent to server: " + new String(datagramPacket.getData()) +
+                        " (Byte form: " + Arrays.toString(datagramPacket.getData())+ ")");
 				clientSocket.send(datagramPacket);
 			} catch (IOException e) {
 				LOG.severe("Could not send data packet: " + e.getLocalizedMessage());
 				System.exit(1);
 			}
 			
-			byte[] buffer = new byte[100];
+			byte[] buffer = new byte[BUFFER_SIZE];
 			DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
 			
 			try {
 		    	clientSocket.receive(receivePacket);
+                LOG.info("Received data: " + Arrays.toString(receivePacket.getData()));
 		    } catch(IOException e) {
 		    	LOG.severe("Could not receive data packet: " + e.getLocalizedMessage());
 		    	System.exit(1);
 		    }
-			
-			LOG.info(Arrays.toString(receivePacket.getData()));
 		}
 		
 		LOG.info("Client shutting down...");
 	}
 	
 	public static void main(String args[]) {
-		Client client = new Client("localhost", 67);
+		Client client = new Client("localhost", 67, 68);
 		client.run();
 	}
 }
