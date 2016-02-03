@@ -23,7 +23,7 @@ public class AgentThread implements Runnable {
         Random random = new Random();
         int produced = 0;
 
-        while(produced < 10) {
+        while(produced < 20) {
             // Produce missing ingredient randomly
             int missing = random.nextInt(3);
             Ingredient missingIngredient = Ingredient.ALL;
